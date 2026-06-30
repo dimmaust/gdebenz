@@ -746,9 +746,10 @@ async def cmd_update(message: Message):
             ["md5sum", str(req_file)], capture_output=True, text=True
         ).stdout.split()[0]
 
-    # git pull
+    # git fetch + reset (перезаписывает локальные изменения)
+    subprocess.run(["git", "fetch", "origin"], capture_output=True, cwd=install_dir)
     result = subprocess.run(
-        ["git", "pull"], capture_output=True, text=True, cwd=install_dir
+        ["git", "reset", "--hard", "origin/main"], capture_output=True, text=True, cwd=install_dir
     )
 
     if result.returncode != 0:
