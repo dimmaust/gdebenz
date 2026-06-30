@@ -1,0 +1,17 @@
+[Unit]
+Description=GdeBenz Telegram Bot
+After=network.target
+
+[Service]
+Type=simple
+User=gdebenz
+Group=gdebenz
+WorkingDirectory=/opt/gdebenz
+ExecStart=/opt/gdebenz/venv/bin/python bot.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
