@@ -279,17 +279,25 @@ sudo nano /opt/gdebenz/cities.json
 
 ### Обновление кода
 
+**Через Telegram (рекомендуется):**
+
+Администратор отправляет боту команду `/update`.
+
+Бот автоматически:
+1. Сделает `git pull`
+2. Обновит зависимости, если изменился `requirements.txt`
+3. Перезапустит оба сервиса
+
+**Вручную через SSH (запасной вариант):**
+
 ```bash
-# Остановить сервисы
 sudo systemctl stop gdebenz gdebenz-bot
-
-# Загрузить новые файлы
-scp bot.py monitor.py root@сервер:/opt/gdebenz/
-
-# Права
+cd /opt/gdebenz
+sudo -u gdebenz git pull
+source venv/bin/activate
+pip install -r requirements.txt
+deactivate
 sudo chown -R gdebenz:gdebenz /opt/gdebenz
-
-# Запустить
 sudo systemctl start gdebenz gdebenz-bot
 ```
 

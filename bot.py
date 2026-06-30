@@ -1,6 +1,7 @@
 import json
 import logging
 import requests
+import subprocess
 from pathlib import Path
 from dotenv import load_dotenv
 import os
@@ -234,7 +235,8 @@ async def cmd_start(message: Message):
             "/reject <id> - Отклонить заявку\n"
             "/users - Список подписчиков\n"
             "/kick <id> - Удалить подписчика\n"
-            "/stats - Статистика\n\n"
+            "/stats - Статистика\n"
+            "/update - Обновить из git\n\n"
             "<b>Команды подписчика:</b>\n"
             "/status, /city, /fuel, /brands, /where, /help",
             parse_mode="HTML",
@@ -721,6 +723,80 @@ async def cmd_stats(message: Message):
             lines.append(f"  🏢 {brand}: {count}")
 
     await message.answer("\n".join(lines), parse_mode="HTML")
+
+
+@router.message(Command("update"))
+async def cmd_update(message: Message):
+    chat_id = str(message.chat.id)
+    if not is_admin(chat_id):
+        await message.answer("⛔ Нет доступа.")
+        return
+
+    install_dir = str(BASE_DIR)
+    venv_pip = str(BASE_DIR / "venv" / "bin" / "pip")
+
+    await message.answer("🔄 Обновляю из репозитория...")
+
+    # Запоминаем хэш requirements.txt до обновления
+    req_file = BASE_DIR / "requirements.txt"
+    req_hash_before = ""
+    if req_file.exists():
+        req_hash_before = subprocess.run(
+            ["md5sum", str(req_file)], capture_output=True, text=True
+        ).stdout.split()[0]
+
+    # git pull
+    result = subprocess.run(
+        ["git", "pull"], capture_output=True, text=True, cwd=install_dir
+    )
+
+    if result.returncode != 0:
+        await message.answer(
+            f"❌ Ошибка git pull:\n<pre>{result.stderr[:500]}</pre>",
+            parse_mode="HTML",
+        )
+        return
+
+    output = result.stdout.strip()
+    if "Already up to date" in output:
+        await message.answer("✅ Уже актуальная версия. Обновление не требуется.")
+        return
+
+    # Проверяем, изменился ли requirements.txt
+    req_hash_after = ""
+    if req_file.exists():
+        req_hash_after = subprocess.run(
+            ["md5sum", str(req_file)], capture_output=True, text=True
+        ).stdout.split()[0]
+
+    pip_output = ""
+    if req_hash_before != req_hash_after:
+        await message.answer("📦 Обновляю зависимости...")
+        pip_result = subprocess.run(
+            [venv_pip, "install", "-q", "-r", str(req_file)],
+            capture_output=True, text=True,
+        )
+        if pip_result.returncode != 0:
+            await message.answer(
+                f"❌ Ошибка установки зависимостей:\n<pre>{pip_result.stderr[:500]}</pre>",
+                parse_mode="HTML",
+            )
+            return
+        pip_output = "\n📦 Зависимости обновлены"
+
+    # Права
+    subprocess.run(["chown", "-R", "gdebenz:gdebenz", install_dir], capture_output=True)
+
+    await message.answer(
+        f"✅ Обновление загружено{pip_output}\n\n"
+        f"<pre>{output[:500]}</pre>\n\n"
+        "🔄 Перезапускаю сервисы...",
+        parse_mode="HTML",
+    )
+
+    # Перезапуск сервисов (бот перезапустится сам)
+    subprocess.run(["systemctl", "restart", "gdebenz"], capture_output=True)
+    subprocess.run(["systemctl", "restart", "gdebenz-bot"], capture_output=True)
 
 
 # === ЗАПУСК ===
