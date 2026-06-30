@@ -3,6 +3,14 @@
 Telegram-бот для мониторинга наличия топлива на АЗС на основе данных сайта gdebenz.ru.
 
 ## Установка
+Установка одной командой
+
+curl -sSL https://raw.githubusercontent.com/dimmaust/gdebenz/main/install.sh | sudo bash
+
+Скрипт спросит два значения:
+- Telegram Bot Token — от @BotFather
+- Ваш Telegram ID — от @userinfobot
+
 
 ```bash
 sudo useradd -r -s /bin/false gdebenz
