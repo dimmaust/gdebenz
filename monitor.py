@@ -117,6 +117,7 @@ def increment_notification_counter(chat_ids: list):
 def notify_change(chat_ids: list, station: dict, fuel: str, appeared: bool):
     fuel_name = FUEL_NAMES.get(fuel, fuel)
     name = station.get("name") or station.get("brand") or "Неизвестно"
+    addr = station.get("addr", "")
     lat = station["lat"]
     lon = station["lon"]
     yandex_url = f"https://yandex.ru/maps/?pt={lon},{lat}&z=16&l=map"
@@ -128,12 +129,16 @@ def notify_change(chat_ids: list, station: dict, fuel: str, appeared: bool):
         emoji = "❌"
         action = "Закончился"
 
-    message = (
-        f"{emoji} {action} {fuel_name}\n\n"
-        f"АЗС: {name}\n"
-        f"Координаты: {lat:.4f}, {lon:.4f}\n\n"
-        f"Яндекс.Карты:\n{yandex_url}"
-    )
+    lines = [
+        f"{emoji} {action} {fuel_name}\n",
+        f"АЗС: {name}",
+    ]
+    if addr:
+        lines.append(f"📍 {addr}")
+    lines.append(f"📍 Координаты: {lat:.4f}, {lon:.4f}")
+    lines.append(f"\n🗺 Яндекс.Карты:\n{yandex_url}")
+
+    message = "\n".join(lines)
 
     logger.info(f"Уведомление: {action} {fuel_name} на {name} → {len(chat_ids)} подписчикам")
     for chat_id in chat_ids:
