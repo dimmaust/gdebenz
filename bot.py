@@ -2,6 +2,7 @@ import json
 import logging
 import requests
 import subprocess
+from html import escape as html_escape
 from pathlib import Path
 from dotenv import load_dotenv
 import os
@@ -752,7 +753,7 @@ async def cmd_update(message: Message):
 
     if result.returncode != 0:
         await message.answer(
-            f"❌ Ошибка git pull:\n<pre>{result.stderr[:500]}</pre>",
+            f"❌ Ошибка git pull:\n<pre>{html_escape(result.stderr[:500])}</pre>",
             parse_mode="HTML",
         )
         return
@@ -778,7 +779,7 @@ async def cmd_update(message: Message):
         )
         if pip_result.returncode != 0:
             await message.answer(
-                f"❌ Ошибка установки зависимостей:\n<pre>{pip_result.stderr[:500]}</pre>",
+                f"❌ Ошибка установки зависимостей:\n<pre>{html_escape(pip_result.stderr[:500])}</pre>",
                 parse_mode="HTML",
             )
             return
@@ -789,7 +790,7 @@ async def cmd_update(message: Message):
 
     await message.answer(
         f"✅ Обновление загружено{pip_output}\n\n"
-        f"<pre>{output[:500]}</pre>\n\n"
+        f"<pre>{html_escape(output[:500])}</pre>\n\n"
         "🔄 Перезапускаю сервисы...",
         parse_mode="HTML",
     )
