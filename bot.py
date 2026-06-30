@@ -738,6 +738,14 @@ async def cmd_update(message: Message):
 
     await message.answer("🔄 Обновляю из репозитория...")
 
+    # Сохраняем конфигурацию и данные перед обновлением
+    protected_files = [".env", "cities.json", "subscribers.json", "pending.json", "state.json"]
+    backups = {}
+    for fname in protected_files:
+        fpath = BASE_DIR / fname
+        if fpath.exists():
+            backups[fname] = fpath.read_text(encoding="utf-8")
+
     # Запоминаем хэш requirements.txt до обновления
     req_file = BASE_DIR / "requirements.txt"
     req_hash_before = ""
@@ -746,7 +754,7 @@ async def cmd_update(message: Message):
             ["md5sum", str(req_file)], capture_output=True, text=True
         ).stdout.split()[0]
 
-    # git fetch + reset (перезаписывает локальные изменения)
+    # git fetch + reset
     subprocess.run(["git", "fetch", "origin"], capture_output=True, cwd=install_dir)
     result = subprocess.run(
         ["git", "reset", "--hard", "origin/main"], capture_output=True, text=True, cwd=install_dir
@@ -754,13 +762,19 @@ async def cmd_update(message: Message):
 
     if result.returncode != 0:
         await message.answer(
-            f"❌ Ошибка git pull:\n<pre>{html_escape(result.stderr[:500])}</pre>",
+            f"❌ Ошибка git reset:\n<pre>{html_escape(result.stderr[:500])}</pre>",
             parse_mode="HTML",
         )
         return
 
     output = result.stdout.strip()
-    if "Already up to date" in output:
+
+    # Восстанавливаем конфигурацию и данные
+    for fname, content in backups.items():
+        fpath = BASE_DIR / fname
+        fpath.write_text(content, encoding="utf-8")
+
+    if "Already up to date" in output and not backups:
         await message.answer("✅ Уже актуальная версия. Обновление не требуется.")
         return
 

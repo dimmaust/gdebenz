@@ -83,11 +83,14 @@ cd "$INSTALL_DIR"
 rm -f "$INSTALL_DIR/venv" 2>/dev/null || true
 
 # --- Шаг 6: .env ---
-cat > "$INSTALL_DIR/.env" << EOF
-TELEGRAM_BOT_TOKEN=$BOT_TOKEN
-ADMIN_CHAT_ID=$ADMIN_ID
-EOF
-info ".env создан"
+if [ ! -f "$INSTALL_DIR/.env" ]; then
+    cp "$INSTALL_DIR/.env.example" "$INSTALL_DIR/.env"
+    sed -i "s/your_bot_token_here/$BOT_TOKEN/" "$INSTALL_DIR/.env"
+    sed -i "s/your_admin_chat_id_here/$ADMIN_ID/" "$INSTALL_DIR/.env"
+    info ".env создан из шаблона"
+else
+    info ".env уже существует, пропускаю"
+fi
 
 # --- Шаг 7: Виртуальное окружение ---
 python3 -m venv "$INSTALL_DIR/venv"
